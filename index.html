@@ -77,8 +77,25 @@
             height: calc((100% - 239px) / 2);
         }
 
-        rect.highlight {
+        rect.highlight.selected {
             fill: #A4C2F4;
+        }
+
+        rect.highlight:not(selected) {
+            fill: #CCCCCC;
+        }
+
+        rect.highlight-overlay {
+            cursor: pointer;
+            fill: rgba(0, 0, 0, 0);
+        }
+
+        rect.highlight-overlay:hover {
+            fill: rgb(0, 0, 0, 0.1);
+        }
+
+        rect.highlight-overlay:active {
+            fill: rgb(0, 0, 0, 0.2);
         }
 
         /* Details Box Styling */
@@ -137,6 +154,7 @@
         var patternLength;
         var numPatterns;
         var patternStarts;
+        var prevPatternIdx;
 
         //Processes file uploads
         document.querySelector("#upload-button").addEventListener('input', function () {
@@ -198,7 +216,7 @@
         function showPatterns() {
             var patterns = [];
             var patternFound;
-            for (var i = 2 * patternLength; i < data.length; i++) {
+            for (var i = 2 * patternLength - 1; i < data.length; i++) {
                 patternFound = true;
 
                 for (var j = 0; j < patternLength; j++) {
@@ -222,26 +240,38 @@
 
             numPatterns = 0;
             patternStarts = [];
-            var finalContents = "";
+            var contentPrefix = "";
+            var contentSuffix = "";
             patterns.forEach(function (bounds) {
                 var startX = ((data[bounds[0]][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
                 var endX = ((data[bounds[1] - 1][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
 
-                finalContents += "<rect id='pattern-" + numPatterns + "' onclick='patternDetails(" + numPatterns + ")' class='highlight' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>"
+                contentPrefix += "<rect id='pattern-" + numPatterns + "' class='highlight' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>";
+                contentSuffix += "<rect class='highlight-overlay' onclick='patternDetails(" + numPatterns + ")' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>"
                 patternStarts[numPatterns] = bounds[0];
                 numPatterns++;
             });
 
-            document.querySelector("#graph").innerHTML = finalContents + document.querySelector("#graph").innerHTML;
-            console.log(patternStarts);
+            document.querySelector("#graph").innerHTML = contentPrefix + document.querySelector("#graph").innerHTML + contentSuffix;
+            
+            prevPatternIdx = -1;
+            if (numPatterns > 0) {
+                patternDetails(0);
+            }
         }
 
         function patternDetails(patternIdx) {
+            if (prevPatternIdx != -1) {
+                document.querySelector("#pattern-" + prevPatternIdx).classList.remove("selected");
+            }
+            document.querySelector("#pattern-" + patternIdx).classList.add("selected");
+
             var finalContents = "";
             for (var i = patternStarts[patternIdx]; i < patternStarts[patternIdx] + patternLength; i++) {
                 finalContents += "<div>" + data[i][1] + "</div>";
             }
             document.querySelector("#output-details").innerHTML = finalContents;
+            prevPatternIdx = patternIdx;
         }
 
         function showSelector() {
