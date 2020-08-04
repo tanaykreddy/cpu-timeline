@@ -194,17 +194,17 @@
 
                 var height;
                 var offsetY;
-                if (line[1].indexOf(" Read:") != -1) {
-                    height = 11.5;
-                    offsetY = -10;
+                if (line[1].indexOf(" Read:") != -1 || line[1].indexOf(" Response Data:") != -1) {
+                    height = 51.5;
+                    offsetY = -50;
                 }
                 else if (line[1].indexOf(" Write:") != -1) {
-                    height = 11.5;
+                    height = 51.5;
                     offsetY = -1.5;
                 }
                 else {
-                    height = 20;
-                    offsetY = -10;
+                    height = 100;
+                    offsetY = -50;
                 }
 
                 finalContents += "<rect x='" + posX + "%' y='50%' width='3' height='" + height + "' transform='translate(0, " + offsetY + ")'></rect>"
@@ -246,8 +246,8 @@
                 var startX = ((data[bounds[0]][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
                 var endX = ((data[bounds[1] - 1][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
 
-                contentPrefix += "<rect id='pattern-" + numPatterns + "' class='highlight' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>";
-                contentSuffix += "<rect class='highlight-overlay' onclick='patternDetails(" + numPatterns + ")' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>"
+                contentPrefix += "<rect id='pattern-" + numPatterns + "' class='highlight' x='" + startX + "%' y='0%' width='calc(" + (endX - startX) + "% + 3px)' height='100%'></rect>";
+                contentSuffix += "<rect class='highlight-overlay' onclick='patternDetails(" + numPatterns + ")' x='" + startX + "%' y='0%' width='calc(" + (endX - startX) + "% + 3px)' height='100%'></rect>";
                 patternStarts[numPatterns] = bounds[0];
                 numPatterns++;
             });
@@ -268,7 +268,7 @@
 
             var finalContents = "";
             for (var i = patternStarts[patternIdx]; i < patternStarts[patternIdx] + patternLength; i++) {
-                finalContents += "<div>" + data[i][1] + "</div>";
+                finalContents += "<div>" + data[i][0] + " " + data[i][1] + "</div>";
             }
             document.querySelector("#output-details").innerHTML = finalContents;
             prevPatternIdx = patternIdx;
