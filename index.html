@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>CPU Timeline</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
+
+    <style>
+        /* Universal Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        /* Header Styling */
+        header {
+            float: left;
+            width: 100%;
+            background-color: black;
+        }
+
+        h1 {
+            font-family: 'Oswald', sans-serif;
+            font-size: 6em;
+            color: white;
+            text-align: center;
+        }
+
+        /* Upload Button Styling */
+        #input-upload {
+            font-family: 'Courier Prime', monospace;
+            float: left;
+            width: 100%;
+            height: 2em;
+            font-size: 1.5em;
+            border-color: black;
+            border-width: 0 0 5px 0;
+            border-style: solid;
+        }
+
+        #upload-label {
+            width: 100%;
+            height: 100%;
+            display: block;
+            text-align: center;
+            padding: 10px;
+        }
+
+        #upload-button {
+            display: none;
+        }
+
+        #upload-label:hover {
+            cursor: pointer;
+            background-color: #E5E5E5;
+        }
+
+        #upload-label:active {
+            background-color: #CCCCCC;
+        }
+
+        /* Timeline Box Styling */
+        #output-lines {
+            clear: left;
+            width: 100%;
+            height: calc((100% - 239px) / 2);
+        }
+
+        rect.highlight {
+            fill: #A4C2F4;
+        }
+
+        /* Details Box Styling */
+        #output-details {
+            width: 100%;
+            height: calc((100% - 239px) / 2);
+            overflow-y: scroll;
+            padding: 10px;
+        }
+
+        #output-details > div {
+            font-family: 'Courier Prime', monospace;
+            font-size: 1.5em;
+        }
+
+        /* Pattern Box Styling */
+        #input-pattern {
+            font-family: 'Courier Prime', monospace;
+            height: 2em;
+            font-size: 1.5em;
+            text-align: right;
+            padding: 10px;
+            display: none;
+        }
+
+        #pattern-length {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>CPU Timeline</h1>
+    </header>
+
+    <div id='input-upload'>
+        <label for='upload-button' id='upload-label'>Upload CSV File</label>
+        <input type='file' id='upload-button'>
+    </div>
+
+    <div id='output-lines'>
+        <svg id='graph' width='100%' height='100%'>
+        </svg>
+    </div>
+
+    <div id='output-details'></div>
+
+    <div id='input-pattern'>
+        Pattern Length:<span id='pattern-length' contenteditable='true'>2</span>
+    </div>
+
+    <script>
+        var file;
+        var data;
+        var patternLength;
+        var numPatterns;
+        var patternStarts;
+
+        //Processes file uploads
+        document.querySelector("#upload-button").addEventListener('input', function () {
+            file = document.querySelector("#upload-button").files[0];
+            processFile();
+        });
+        function processFile() {
+            var reader = new FileReader();
+            reader.onload = function () {
+                document.querySelector("#upload-label").innerHTML = "Uploaded " + file.name;
+
+                var fileContents = reader.result.split(/\r?\n/);
+
+                data = [];
+                patternLength = 2;
+                fileContents.forEach(function (line) {
+                    if (line.length != 0) {
+                        var splitIndex = line.indexOf(" ");
+                        data.push([parseInt(line.substring(0, splitIndex)), line.substring(splitIndex + 1)]);
+                    }
+                });
+
+                drawLines();
+                showPatterns();
+                showSelector();
+            }
+
+            reader.readAsText(file);
+            document.querySelector("#upload-button").value = null;
+        }
+
+        function drawLines() {
+            var finalContents = "<line id='timeline' x1='1%' y1='50%' x2='99%' y2='50%' style='stroke:black; stroke-width:3'></line>";
+
+            data.forEach(function (line, lineIdx) {
+                var posX = ((line[0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
+
+                var height;
+                var offsetY;
+                if (line[1].indexOf(" Read:") != -1) {
+                    height = 11.5;
+                    offsetY = -10;
+                }
+                else if (line[1].indexOf(" Write:") != -1) {
+                    height = 11.5;
+                    offsetY = -1.5;
+                }
+                else {
+                    height = 20;
+                    offsetY = -10;
+                }
+
+                finalContents += "<rect x='" + posX + "%' y='50%' width='3' height='" + height + "' transform='translate(0, " + offsetY + ")'></rect>"
+            });
+
+            document.querySelector("#graph").innerHTML = finalContents;
+        }
+
+        function showPatterns() {
+            var patterns = [];
+            var patternFound;
+            for (var i = 2 * patternLength; i < data.length; i++) {
+                patternFound = true;
+
+                for (var j = 0; j < patternLength; j++) {
+                    if (data[i - j][1] != data[i - j - patternLength][1]) {
+                        patternFound = false;
+                        break;
+                    }
+                }
+
+                if (patternFound) {
+                    if (patterns.length > 0 && patterns[patterns.length - 1][1] > i - 2 * patternLength + 1) {
+                        patterns.push([patterns.pop()[0], i + 1]);
+                    }
+                    else {
+                        patterns.push([i - 2 * patternLength + 1, i + 1]);
+                    }
+
+                    i += patternLength - 1;
+                }
+            }
+
+            numPatterns = 0;
+            patternStarts = [];
+            var finalContents = "";
+            patterns.forEach(function (bounds) {
+                var startX = ((data[bounds[0]][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
+                var endX = ((data[bounds[1] - 1][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
+
+                finalContents += "<rect id='pattern-" + numPatterns + "' onclick='patternDetails(" + numPatterns + ")' class='highlight' x='" + startX + "%' y='50%' width='calc(" + (endX - startX) + "% + 3px)' height='20' transform='translate(0, -10)'></rect>"
+                patternStarts[numPatterns] = bounds[0];
+                numPatterns++;
+            });
+
+            document.querySelector("#graph").innerHTML = finalContents + document.querySelector("#graph").innerHTML;
+            console.log(patternStarts);
+        }
+
+        function patternDetails(patternIdx) {
+            var finalContents = "";
+            for (var i = patternStarts[patternIdx]; i < patternStarts[patternIdx] + patternLength; i++) {
+                finalContents += "<div>" + data[i][1] + "</div>";
+            }
+            document.querySelector("#output-details").innerHTML = finalContents;
+        }
+
+        function showSelector() {
+            document.querySelector("#input-pattern").style.display = "block";
+            document.querySelector("#pattern-length").innerText = 2;
+
+            document.querySelector("#input-pattern").addEventListener("click", function() {
+                document.querySelector("#pattern-length").focus();
+            });
+            document.querySelector("#pattern-length").addEventListener("keydown", function (event) {
+                if (event.key == "Enter") {
+                    event.preventDefault();
+                    selectPattern(this);
+                }
+            });
+            document.querySelector("#pattern-length").addEventListener("blur", selectPattern(this));
+            function selectPattern(self) {
+                self.blur();
+                patternLength = document.querySelector("#pattern-length").innerText;
+                if (isNaN(patternLength) || parseInt(patternLength) < 2 || patternLength.indexOf(".") != -1) {
+                    document.querySelector("#pattern-length").innerText = 2;
+                    patternLength = 2;
+                }
+                else {
+                    patternLength = parseInt(patternLength);
+                }
+                drawLines();
+                showPatterns();
+            }
+        }
+    </script>
+</body>
+
+</html>
