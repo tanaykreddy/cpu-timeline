@@ -77,6 +77,10 @@
             height: calc((100% - 239px) / 2);
         }
 
+        rect.highlight {
+            stroke: #7F7F7F;
+        }
+
         rect.highlight.selected {
             fill: #A4C2F4;
         }
@@ -145,15 +149,21 @@
     <div id='output-details'></div>
 
     <div id='input-pattern'>
-        Pattern Length:<span id='pattern-length' contenteditable='true'>2</span>
+        <span id='box-1'>Minimum Cycles:<span id='min-patterns' contenteditable='true'></span></span>
+        <span id='box-2'>Cycle Length:<span id='pattern-length' contenteditable='true'></span></span>
     </div>
 
     <script>
         var file;
         var data;
+
+        var minPatterns;
         var patternLength;
+
         var numPatterns;
-        var patternStarts;
+
+        var patternBounds;
+
         var prevPatternIdx;
 
         //Processes file uploads
@@ -239,16 +249,20 @@
             }
 
             numPatterns = 0;
-            patternStarts = [];
+            patternBounds = [];
             var contentPrefix = "";
             var contentSuffix = "";
             patterns.forEach(function (bounds) {
+                if (bounds[1] - bounds[0] < minPatterns * patternLength) {
+                    return;
+                }
+
                 var startX = ((data[bounds[0]][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
                 var endX = ((data[bounds[1] - 1][0] - data[0][0]) / (data[data.length - 1][0] - data[0][0])) * 98 + 1;
 
                 contentPrefix += "<rect id='pattern-" + numPatterns + "' class='highlight' x='" + startX + "%' y='0%' width='calc(" + (endX - startX) + "% + 3px)' height='100%'></rect>";
                 contentSuffix += "<rect class='highlight-overlay' onclick='patternDetails(" + numPatterns + ")' x='" + startX + "%' y='0%' width='calc(" + (endX - startX) + "% + 3px)' height='100%'></rect>";
-                patternStarts[numPatterns] = bounds[0];
+                patternBounds[numPatterns] = [bounds[0], bounds[1]];
                 numPatterns++;
             });
 
@@ -267,9 +281,11 @@
             document.querySelector("#pattern-" + patternIdx).classList.add("selected");
 
             var finalContents = "";
-            for (var i = patternStarts[patternIdx]; i < patternStarts[patternIdx] + patternLength; i++) {
+            for (var i = patternBounds[patternIdx][0]; i < patternBounds[patternIdx][0] + patternLength; i++) {
                 finalContents += "<div>" + data[i][0] + " " + data[i][1] + "</div>";
             }
+            finalContents += "<div>...</div><div>" + data[patternBounds[patternIdx][1] - 1][0] + " " + data[patternBounds[patternIdx][1] - 1][1] + "</div>";
+
             document.querySelector("#output-details").innerHTML = finalContents;
             prevPatternIdx = patternIdx;
         }
@@ -277,19 +293,33 @@
         function showSelector() {
             document.querySelector("#input-pattern").style.display = "block";
             document.querySelector("#pattern-length").innerText = 2;
+            document.querySelector("#min-patterns").innerText = 2;
 
-            document.querySelector("#input-pattern").addEventListener("click", function() {
+            document.querySelector("#box-1").addEventListener("click", function() {
+                document.querySelector("#min-patterns").focus();
+            });
+            document.querySelector("#box-2").addEventListener("click", function() {
                 document.querySelector("#pattern-length").focus();
+            });
+
+            document.querySelector("#min-patterns").addEventListener("keydown", function (event) {
+                if (event.key == "Enter") {
+                    event.preventDefault();
+                    this.blur();
+                    selectPattern();
+                }
             });
             document.querySelector("#pattern-length").addEventListener("keydown", function (event) {
                 if (event.key == "Enter") {
                     event.preventDefault();
-                    selectPattern(this);
+                    this.blur();
+                    selectPattern();
                 }
             });
-            document.querySelector("#pattern-length").addEventListener("blur", selectPattern(this));
-            function selectPattern(self) {
-                self.blur();
+
+            document.querySelector("#min-patterns").addEventListener("blur", selectPattern);
+            document.querySelector("#pattern-length").addEventListener("blur", selectPattern);
+            function selectPattern() {
                 patternLength = document.querySelector("#pattern-length").innerText;
                 if (isNaN(patternLength) || parseInt(patternLength) < 2 || patternLength.indexOf(".") != -1) {
                     document.querySelector("#pattern-length").innerText = 2;
@@ -298,6 +328,16 @@
                 else {
                     patternLength = parseInt(patternLength);
                 }
+
+                minPatterns = document.querySelector("#min-patterns").innerText;
+                if (isNaN(minPatterns) || parseInt(minPatterns) < 2 || minPatterns.indexOf(".") != -1) {
+                    document.querySelector("#min-patterns").innerText = 2;
+                    minPatterns = 2;
+                }
+                else {
+                    minPatterns = parseInt(minPatterns);
+                }
+
                 drawLines();
                 showPatterns();
             }
