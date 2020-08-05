@@ -110,7 +110,7 @@
             padding: 10px;
         }
 
-        #output-details > div {
+        #output-details>div {
             font-family: 'Courier Prime', monospace;
             font-size: 1.5em;
         }
@@ -124,8 +124,26 @@
             display: none;
         }
 
-        #min-patterns, #pattern-length {
+        #min-patterns,
+        #pattern-length {
             text-decoration: underline;
+        }
+
+        /* Loading Shader Styling */
+        #loading-shader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgb(0, 0, 0, 0.5);
+            z-index: 200;
+            display: none;
+            padding-top: calc(50vh);
+            font-family: 'Courier Prime', monospace;
+            font-size: 4em;
+            text-align: center;
+            color: white;
         }
     </style>
 </head>
@@ -151,6 +169,8 @@
         <div id='box-1'>Minimum Cycles:<span id='min-patterns' contenteditable='true'></span></div>
         <div id='box-2'>Cycle Length:<span id='pattern-length' contenteditable='true'></span></div>
     </div>
+
+    <div id='loading-shader'>Loading...</div>
 
     <script>
         var file;
@@ -186,15 +206,20 @@
                     }
                 });
 
-                drawLines();
-                showPatterns();
-                showSelector();
+                showLoading();
+                setTimeout(function () {
+                    drawLines();
+                    showPatterns();
+                    showSelector();
+                    hideLoading();
+                }, 0);
             }
 
             reader.readAsText(file);
             document.querySelector("#upload-button").value = null;
         }
 
+        //Draws the horizontal line and ticks
         function drawLines() {
             var finalContents = "<line id='timeline' x1='1%' y1='50%' x2='99%' y2='50%' style='stroke:black; stroke-width:3'></line>";
 
@@ -222,6 +247,7 @@
             document.querySelector("#graph").innerHTML = finalContents;
         }
 
+        //Draws the highlights for detected patterns
         function showPatterns() {
             var patterns = [];
             var patternFound;
@@ -266,38 +292,43 @@
             });
 
             document.querySelector("#graph").innerHTML = contentPrefix + document.querySelector("#graph").innerHTML + contentSuffix;
-            
+
             prevPatternIdx = -1;
             if (numPatterns > 0) {
                 patternDetails(0);
             }
+            else {
+                document.querySelector("#output-details").innerHTML = "";
+            }
         }
 
+        //Displays details about the currently selected pattern
         function patternDetails(patternIdx) {
             if (prevPatternIdx != -1) {
                 document.querySelector("#pattern-" + prevPatternIdx).classList.remove("selected");
             }
             document.querySelector("#pattern-" + patternIdx).classList.add("selected");
 
-            var finalContents = "";
+            var finalContents = "<div>";
             for (var i = patternBounds[patternIdx][0]; i < patternBounds[patternIdx][0] + patternLength; i++) {
-                finalContents += "<div>" + data[i][0] + " " + data[i][1] + "</div>";
+                finalContents += data[i][0] + " " + data[i][1] + "<br>";
             }
-            finalContents += "<div>...</div><div>" + data[patternBounds[patternIdx][1] - 1][0] + " " + data[patternBounds[patternIdx][1] - 1][1] + "</div>";
+            finalContents += "...<br>" + data[patternBounds[patternIdx][1] - 1][0] + " " + data[patternBounds[patternIdx][1] - 1][1] + "<br><br>" + "(" + ((patternBounds[patternIdx][1] - patternBounds[patternIdx][0]) / patternLength) + " cycles)</div>";
 
             document.querySelector("#output-details").innerHTML = finalContents;
             prevPatternIdx = patternIdx;
         }
 
+        //Displays and processes the input of the min patterns and pattern length selectors
         function showSelector() {
             document.querySelector("#input-pattern").style.display = "block";
             document.querySelector("#pattern-length").innerText = 2;
             document.querySelector("#min-patterns").innerText = 2;
 
-            document.querySelector("#box-1").addEventListener("click", function() {
+            document.querySelector("#box-1").addEventListener("click", function () {
                 document.querySelector("#min-patterns").focus();
             });
-            document.querySelector("#box-2").addEventListener("click", function() {
+            document.querySelector("#box-2").addEventListener("click", function () {
                 document.querySelector("#pattern-length").focus();
             });
 
@@ -307,12 +338,20 @@
                     this.blur();
                     selectPattern();
                 }
+                else if (event.key == "ArrowDown") {
+                    event.preventDefault();
+                    document.querySelector("#pattern-length").focus();
+                }
             });
             document.querySelector("#pattern-length").addEventListener("keydown", function (event) {
                 if (event.key == "Enter") {
                     event.preventDefault();
                     this.blur();
                     selectPattern();
+                }
+                else if (event.key == "ArrowUp") {
+                    event.preventDefault();
+                    document.querySelector("#min-patterns").focus();
                 }
             });
 
@@ -337,9 +376,47 @@
                     minPatterns = parseInt(minPatterns);
                 }
 
-                drawLines();
-                showPatterns();
+                showLoading();
+                setTimeout(function () {
+                    drawLines();
+                    showPatterns();
+                    hideLoading();
+                }, 0);
             }
+        }
+
+        //Detects arrow key presses to change the currently selected pattern
+        function checkPress(event) {
+            switch (event.key) {
+                case "ArrowLeft":
+                    if (document.activeElement != document.querySelector("#min-patterns") && document.activeElement != document.querySelector("#pattern-length")) {
+                        event.preventDefault();
+
+                        if (prevPatternIdx > 0) {
+                            patternDetails(prevPatternIdx - 1);
+                        }
+                    }
+
+                    break;
+                case "ArrowRight":
+                    if (document.activeElement != document.querySelector("#min-patterns") && document.activeElement != document.querySelector("#pattern-length")) {
+                        event.preventDefault();
+
+                        if (prevPatternIdx < numPatterns - 1) {
+                            patternDetails(prevPatternIdx + 1);
+                        }
+                    }
+                    break;
+            }
+        }
+        window.addEventListener("keydown", checkPress);
+
+        //Shows and hides the loading window
+        function showLoading() {
+            document.querySelector("#loading-shader").style.display = "initial";
+        }
+        function hideLoading() {
+            document.querySelector("#loading-shader").style.display = "none";
         }
     </script>
 </body>
