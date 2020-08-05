@@ -74,7 +74,7 @@
         #output-lines {
             clear: left;
             width: 100%;
-            height: calc((100% - 239px) / 2);
+            height: calc((100% - 263px) / 2);
         }
 
         rect.highlight {
@@ -105,7 +105,7 @@
         /* Details Box Styling */
         #output-details {
             width: 100%;
-            height: calc((100% - 239px) / 2);
+            height: calc((100% - 263px) / 2);
             overflow-y: scroll;
             padding: 10px;
         }
@@ -118,14 +118,13 @@
         /* Pattern Box Styling */
         #input-pattern {
             font-family: 'Courier Prime', monospace;
-            height: 2em;
             font-size: 1.5em;
             text-align: right;
             padding: 10px;
             display: none;
         }
 
-        #pattern-length {
+        #min-patterns, #pattern-length {
             text-decoration: underline;
         }
     </style>
@@ -149,8 +148,8 @@
     <div id='output-details'></div>
 
     <div id='input-pattern'>
-        <span id='box-1'>Minimum Cycles:<span id='min-patterns' contenteditable='true'></span></span>
-        <span id='box-2'>Cycle Length:<span id='pattern-length' contenteditable='true'></span></span>
+        <div id='box-1'>Minimum Cycles:<span id='min-patterns' contenteditable='true'></span></div>
+        <div id='box-2'>Cycle Length:<span id='pattern-length' contenteditable='true'></span></div>
     </div>
 
     <script>
